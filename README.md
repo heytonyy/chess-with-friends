@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+# Chess React App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile chess application built with React Native and Expo where you can play against friends or challenge a computer opponent.
 
-## Get started
+## Features
 
-1. Install dependencies
+- [Progress] Challenge the computer at different difficulty levels
+- [Future] Online multiplayer
+- [Future] Save and review past games
+- [Future] Chess puzzles
 
-   ```bash
-   npm install
-   ```
+## Technologies Used
 
-2. Start the app
+- React Native
+- Expo
+- Firebase
 
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Installation
 
 ```bash
-npm run reset-project
+# Clone the repository
+git clone https://github.com/heytonyy/chess-react-app.git
+
+# Navigate to the project directory
+cd chess-react-app
+
+# Install dependencies
+npm install
+
+# Start the Expo development server
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Development Status
 
-## Learn more
+This app is currently under development. Below is the implementation roadmap:
 
-To learn more about developing your project with Expo, look at the following resources:
+- [x] Chess board UI
+- [x] Chess piece movement logic
+- [x] Game state management
+- [ ] Computer opponent AI
+- [ ] Local multiplayer functionality
+- [ ] User interface and styling
+- [ ] Settings and preferences
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Project Structure
 
-## Join the community
+```
+chess-react-app/
+├── app/         
+├────── (play)/        # Reusable UI components
+├────── components/    # Reusable UI components
+├────── constants/     # Constants values (Color Pallette)
+├────── context/       # Context componets
+├────── hooks/         # React use Hooks
+├────── types/         # App types
+├────── utils/         # Utility functions
+├────── _layout.tsx    # RootLayout
+├────── index.tsx      # Index page to redirect to login/play
+├────── login.tsx      # Login and Auth Screen
+└── assets/            # Images, fonts, and other static assets
+```
 
-Join our community of developers creating universal apps.
+## Contributing
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Instructions for contributing to the project will be added as development progresses.
+
+## License
+
+MIT License - Feel free to use this code however you'd like for your own projects.
