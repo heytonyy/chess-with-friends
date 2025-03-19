@@ -37,6 +37,8 @@ type Game = {
   moves: Move[];
   winner: "white" | "black" | "draw" | null;
   lastActivity: number;
+  allowSpectators: boolean; 
+  spectators?: string[]; 
 };
 
 type Move = {

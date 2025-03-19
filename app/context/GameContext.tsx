@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { subscribeToGame, makeMove, createGame, joinGame, resignGame } from '../services/gameService';
+import { subscribeToGame, makeMove, createGame, joinGame, resignGame, spectateGame } from '../services/gameService';
 import { auth } from '../config/firebase';
 import { Game, Move, Piece } from '../types/types';
 import { ReactNode } from 'react';
@@ -21,6 +21,9 @@ interface GameContextType {
   isCheck: boolean;
   isCheckmate: boolean;
   isDraw: boolean;
+  isSpectator: boolean;
+  allowSpectators: boolean;
+  spectateGame: (id: string) => Promise<void>;
 }
 
 const GameContext = createContext<GameContextType>({
@@ -39,6 +42,9 @@ const GameContext = createContext<GameContextType>({
   isCheck: false,
   isCheckmate: false,
   isDraw: false,
+  isSpectator: false,
+  allowSpectators: false,
+  spectateGame: async () => {},
 });
 
 interface GameProviderProps {
@@ -54,6 +60,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [isCheck, setIsCheck] = useState(false);
   const [isCheckmate, setIsCheckmate] = useState(false);
   const [isDraw, setIsDraw] = useState(false);
+  const [isSpectator, setIsSpectator] = useState(false);
+  const [allowSpectators, setAllowSpectators] = useState(false);
   
   // Subscribe to game updates when gameId changes
   useEffect(() => {
@@ -119,24 +127,28 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     return squares;
   };
   
-  // Determine player color
   useEffect(() => {
     if (!gameData || !auth.currentUser) return;
     
     const userId = auth.currentUser.uid;
     if (gameData.whitePlayer === userId) {
       setPlayerColor('white');
+      setIsSpectator(false);
     } else if (gameData.blackPlayer === userId) {
       setPlayerColor('black');
+      setIsSpectator(false);
     } else {
       setPlayerColor(null); // Spectator
+      setIsSpectator(true);
     }
+    
+    setAllowSpectators(gameData.allowSpectators || false);
+
   }, [gameData]);
   
-  // Create new game function
-  const startNewGame = async (): Promise<string> => {
+  const startNewGame = async (allowSpectating: boolean = false): Promise<string> => {
     try {
-      const id = await createGame();
+      const id = await createGame(allowSpectating);
       if (!id) throw new Error("Failed to create game: No game ID returned");
       setGameId(id);
       setPlayerColor('white');
@@ -147,7 +159,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
   
-  // Join existing game
   const joinExistingGame = async (id: string) => {
     try {
       await joinGame(id);
@@ -159,7 +170,19 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
   
-  // Make a move
+
+  const spectateExistingGame = async (id: string) => {
+    try {
+      await spectateGame(id);
+      setGameId(id);
+      setIsSpectator(true);
+      setPlayerColor(null); // Spectators don't have a color
+    } catch (error) {
+      console.error("Error spectating game:", error);
+      throw error;
+    }
+  };
+  
   const movePiece = async (from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n') => {
     if (!gameId || !chessBoard || !playerColor) return;
     
@@ -191,7 +214,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
   
-  // Resign game
   const resignCurrentGame = async () => {
     if (!gameId) return;
     
@@ -203,7 +225,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
   
-  // Helper function to get piece at a specific square
+  // Helper function: get piece at a specific square
   const getPieceAt = (square: string): Piece => {
     if (!chessBoard) return null;
     
@@ -219,7 +241,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     };
   };
   
-  // Helper function to convert chess.js piece type to our type
+  // Helper function: convert chess.js piece type to our type
   const getPieceType = (chessPieceType: string): "pawn" | "rook" | "knight" | "bishop" | "queen" | "king" => {
     switch (chessPieceType) {
       case 'p': return 'pawn';
@@ -251,7 +273,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       getPieceAt,
       isCheck,
       isCheckmate,
-      isDraw
+      isDraw,
+      isSpectator,
+      allowSpectators,
+      spectateGame: spectateExistingGame,
     }}>
       {children}
     </GameContext.Provider>

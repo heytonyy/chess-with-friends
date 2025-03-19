@@ -11,7 +11,7 @@ import { db, auth } from "../config/firebase";
 import { Game, Move } from "../types/types";
 import { Chess } from 'chess.js';
 
-export const createGame = async () => {
+export const createGame = async (allowSpectators: boolean = false) => {
   const userId = auth.currentUser?.uid;
 
   if (!userId) throw new Error("User not authenticated");
@@ -29,9 +29,37 @@ export const createGame = async () => {
     moves: [],
     winner: null,
     lastActivity: Date.now(),
+    allowSpectators: allowSpectators,
+    spectators: []
   });
 
   return gameRef.key;
+};
+
+export const spectateGame = async (gameId: string) => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) throw new Error("User not authenticated");
+
+  const gameRef = ref(db, `games/${gameId}`);
+  const snapshot = await get(gameRef);
+  const game: Game = snapshot.val();
+
+  if (!game) throw new Error("Game not found");
+  
+  // Check if spectating is allowed
+  if (!game.allowSpectators) throw new Error("This game does not allow spectators");
+  
+  // Check if user is already a player
+  if (game.whitePlayer === userId || game.blackPlayer === userId) {
+    return; // No need to add as spectator if already a player
+  }
+  
+  // Add user to spectators list if not already there
+  const spectators = game.spectators || [];
+  if (!spectators.includes(userId)) {
+    spectators.push(userId);
+    await update(gameRef, { spectators });
+  }
 };
 
 export const joinGame = async (gameId: string) => {
