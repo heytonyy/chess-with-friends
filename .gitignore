@@ -39,4 +39,22 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-app-example
+# iOS build files
+ios/build/
+ios/Pods/
+ios/DerivedData/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
+
+# Android build files
+android/app/build/
+android/build/
+android/gradle/
+android/.gradle/
+android/local.properties
+*.iml

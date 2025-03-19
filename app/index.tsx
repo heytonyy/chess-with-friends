@@ -6,16 +6,16 @@ import { onAuthStateChanged } from "firebase/auth";
 
 export default function Index() {
   // TODO: change value to null/true/false when testing auth
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  // // TODO: comment this to toggle auth
-  // useEffect(() => {
-  //   const unsubscribe = onAuthStateChanged(auth, (user) => {
-  //     setIsAuthenticated(!!user);
-  //   });
+  // TODO: comment this to toggle auth
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
 
-  //   return unsubscribe;
-  // }, []);
+    return unsubscribe;
+  }, []);
 
   // Show loading while checking auth
   if (isAuthenticated === null) {

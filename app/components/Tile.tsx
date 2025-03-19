@@ -1,63 +1,60 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 import React from "react";
 import Piece from "./Piece";
-import useGameContext from "../context/GameContext";
+import { useGame } from "../context/GameContext";
 import { TileProps } from "../types/types";
 
 const Tile = ({ isLight, position, piece }: TileProps) => {
-  const { state, dispatch } = useGameContext();
+  const { 
+    playerColor, 
+    isMyTurn, 
+    validMoves, 
+    movePiece,
+    gameData,
+    isGameOver
+  } = useGame();
   const { row, col } = position;
+  
+  // Convert row/col coordinates to algebraic notation (e.g., "e4")
+  const squareToAlgebraic = (row: number, col: number): string => {
+    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+    return `${files[col]}${ranks[row]}`;
+  };
 
-  // check if this tile is the selected piece
-  const isSelected =
-    state.selectedPiece?.row === row && state.selectedPiece?.col === col;
-
-  // check if this is a tile for a valid move
-  const isValidMove = state.validMoves.some(
-    (move) => move.row === row && move.col === col
-  );
+  const algebraicSquare = squareToAlgebraic(row, col);
+  
+  // Check if this square is a valid move destination
+  const isValidMoveDestination = validMoves[algebraicSquare]?.length > 0;
+  
+  // Check if this square is a selected piece
+  const isSelected = Object.keys(validMoves).includes(algebraicSquare);
+  
+  // Check if player can interact with this piece (their color and their turn)
+  const isPlayable = isMyTurn && 
+                     piece?.color === playerColor &&
+                     !isGameOver;
 
   const handlePress = () => {
-    // logic if this tile is selected
-    if (state.selectedPiece) {
-      // deselect the tile if it is already selected
-      if (isSelected) {
-        dispatch({
-          type: "SELECT_PIECE",
-          payload: { position: null },
-        });
-      }
-      // move the piece if this tile is a valid move
-      else if (isValidMove) {
-        dispatch({
-          type: "MOVE_PIECE",
-          payload: {
-            from: state.selectedPiece,
-            to: { row, col },
-          },
-        });
-      }
-      // select new piece if new tile same color as current player
-      else if (piece && piece.color === state.currentPlayer) {
-        dispatch({
-          type: "SELECT_PIECE",
-          payload: { position: { row, col } },
-        });
-      }
-      // deselect if clicked on a different piece
-      else {
-        dispatch({
-          type: "SELECT_PIECE",
-          payload: { position: null },
-        });
+    if (isGameOver || gameData?.status !== 'active') return;
+    
+    if (isSelected) {
+      // Deselect the piece (no-op in this implementation as we handle selection differently)
+      return;
+    }
+    
+    // If we have a source square with this square as a valid destination
+    for (const [sourceSquare, destinations] of Object.entries(validMoves)) {
+      if (destinations.includes(algebraicSquare)) {
+        // Make the move
+        movePiece(sourceSquare, algebraicSquare);
+        return;
       }
     }
-    // no piece is selected and this tile had same color as current player
-    else if (piece && piece.color === state.currentPlayer) {
-      dispatch({
-        type: "SELECT_PIECE",
-        payload: { position: { row, col } },
-      });
+    
+    // If this square has a piece and it's the player's turn
+    if (piece && piece.color === playerColor && isMyTurn) {
+      // Let Firebase handling of validMoves handle this
     }
   };
 
@@ -68,7 +65,8 @@ const Tile = ({ isLight, position, piece }: TileProps) => {
         styles.tile,
         isLight ? styles.lightSquare : styles.darkSquare,
         isSelected && styles.selected,
-        isValidMove && styles.validMove,
+        isValidMoveDestination && styles.validMove,
+        isPlayable && styles.playable
       ]}
     >
       {piece && <Piece {...piece} />}
@@ -95,4 +93,8 @@ const styles = StyleSheet.create({
   validMove: {
     backgroundColor: "#839669", // Highlight valid move destinations
   },
+  playable: {
+    // Optional: subtle indication that piece can be moved
+    opacity: 1,
+  }
 });
