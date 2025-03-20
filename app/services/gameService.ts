@@ -11,7 +11,7 @@ import { db, auth } from "../config/firebase";
 import { Game, Move } from "../types/types";
 import { Chess } from 'chess.js';
 
-export const createGame = async (allowSpectators: boolean = false) => {
+export const createGame = async (allowSpectators: boolean) => {
   const userId = auth.currentUser?.uid;
 
   if (!userId) throw new Error("User not authenticated");
@@ -86,6 +86,8 @@ export const makeMove = async (gameId: string, move: Move) => {
   const userId = auth.currentUser?.uid;
   if (!userId) throw new Error("User not authenticated");
 
+  console.log("Making move:", move);
+
   const gameRef = ref(db, `games/${gameId}`);
   const snapshot = await get(gameRef);
   const game = snapshot.val();
@@ -109,11 +111,17 @@ export const makeMove = async (gameId: string, move: Move) => {
   
   // Validate the move is legal
   try {
-    chess.move({
+    const moveOptions: any = {
       from: move.from,
-      to: move.to,
-      promotion: move.promotion // Handle pawn promotion if present
-    });
+      to: move.to
+    };
+    
+    // Only include promotion if it exists
+    if (move.promotion) {
+      moveOptions.promotion = move.promotion;
+    }
+    
+    chess.move(moveOptions);
   } catch (error) {
     throw new Error("Invalid move");
   }
@@ -121,13 +129,22 @@ export const makeMove = async (gameId: string, move: Move) => {
   // Get the new FEN after move
   const newFEN = chess.fen();
   
-  // Add move to history
-  const newMoveRef = push(ref(db, `games/${gameId}/moves`));
-  await set(newMoveRef, {
-    ...move,
+  // Add move to history - create a clean object without undefined values
+  const moveToStore: Partial<Move> = {
+    from: move.from,
+    to: move.to,
+    piece: move.piece,
     player: isWhite ? "white" : "black",
     timestamp: Date.now(),
-  });
+  };
+  
+  // Only add promotion if it exists
+  if (move.promotion) {
+    moveToStore.promotion = move.promotion;
+  }
+  
+  const newMoveRef = push(ref(db, `games/${gameId}/moves`));
+  await set(newMoveRef, moveToStore);
 
   // Prepare update object
   const updateData: Partial<Game> = {

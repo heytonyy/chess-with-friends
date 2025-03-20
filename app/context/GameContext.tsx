@@ -1,9 +1,16 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { subscribeToGame, makeMove, createGame, joinGame, resignGame, spectateGame } from '../services/gameService';
-import { auth } from '../config/firebase';
-import { Game, Move, Piece } from '../types/types';
-import { ReactNode } from 'react';
-import { Chess, Square } from 'chess.js';
+import React, { createContext, useState, useEffect, useContext } from "react";
+import {
+  subscribeToGame,
+  makeMove,
+  createGame,
+  joinGame,
+  resignGame,
+  spectateGame,
+} from "../services/gameService";
+import { auth } from "../config/firebase";
+import { Game, Move, Piece } from "../types/types";
+import { ReactNode } from "react";
+import { Chess, Square } from "chess.js";
 
 interface GameContextType {
   gameId: string | null;
@@ -13,9 +20,13 @@ interface GameContextType {
   isMyTurn: boolean;
   isGameOver: boolean;
   validMoves: Record<string, string[]>; // From square -> array of valid destinations
-  startNewGame: () => Promise<string>;
+  startNewGame: (allowSpectating: boolean) => Promise<string>;
   joinExistingGame: (id: string) => Promise<void>;
-  movePiece: (from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n') => Promise<void>;
+  movePiece: (
+    from: string,
+    to: string,
+    promotion?: "q" | "r" | "b" | "n"
+  ) => Promise<void>;
   resignCurrentGame: () => Promise<void>;
   getPieceAt: (square: string) => Piece;
   isCheck: boolean;
@@ -24,6 +35,8 @@ interface GameContextType {
   isSpectator: boolean;
   allowSpectators: boolean;
   spectateGame: (id: string) => Promise<void>;
+  selectedSquare: string | null;
+  selectSquare: (square: string | null) => void;
 }
 
 const GameContext = createContext<GameContextType>({
@@ -34,7 +47,7 @@ const GameContext = createContext<GameContextType>({
   isMyTurn: false,
   isGameOver: false,
   validMoves: {},
-  startNewGame: async () => '',
+  startNewGame: async () => "",
   joinExistingGame: async () => {},
   movePiece: async () => {},
   resignCurrentGame: async () => {},
@@ -45,6 +58,8 @@ const GameContext = createContext<GameContextType>({
   isSpectator: false,
   allowSpectators: false,
   spectateGame: async () => {},
+  selectedSquare: null,
+  selectSquare: () => {},
 });
 
 interface GameProviderProps {
@@ -54,7 +69,9 @@ interface GameProviderProps {
 export const GameProvider = ({ children }: GameProviderProps) => {
   const [gameId, setGameId] = useState<string | null>(null);
   const [gameData, setGameData] = useState<Game | null>(null);
-  const [playerColor, setPlayerColor] = useState<"white" | "black" | null>(null);
+  const [playerColor, setPlayerColor] = useState<"white" | "black" | null>(
+    null
+  );
   const [chessBoard, setChessBoard] = useState<Chess | null>(null);
   const [validMoves, setValidMoves] = useState<Record<string, string[]>>({});
   const [isCheck, setIsCheck] = useState(false);
@@ -62,43 +79,49 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   const [isDraw, setIsDraw] = useState(false);
   const [isSpectator, setIsSpectator] = useState(false);
   const [allowSpectators, setAllowSpectators] = useState(false);
-  
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+
   // Subscribe to game updates when gameId changes
   useEffect(() => {
     if (!gameId) return;
-    
+
     const unsubscribe = subscribeToGame(gameId, (data) => {
       setGameData(data);
-      
+
       // Update local chess.js instance based on FEN
       if (data.board) {
         try {
           const chess = new Chess(data.board);
           setChessBoard(chess);
-          
+
           // Calculate valid moves for all pieces
           const moves: Record<string, string[]> = {};
-          
+
           // Get all squares with pieces on them
           const squares = getAllSquares();
-          
-          squares.forEach(square => {
+
+          squares.forEach((square) => {
             // Convert string to Square type
             const typedSquare = square as Square;
             const piece = chess.get(typedSquare);
-            
-            if (piece && piece.color === (playerColor === 'white' ? 'w' : 'b')) {
-              const destinations = chess.moves({
-                square: typedSquare,
-                verbose: true
-              }).map(move => move.to);
-              
+
+            if (
+              piece &&
+              piece.color === (playerColor === "white" ? "w" : "b")
+            ) {
+              const destinations = chess
+                .moves({
+                  square: typedSquare,
+                  verbose: true,
+                })
+                .map((move) => move.to);
+
               if (destinations.length > 0) {
                 moves[square] = destinations;
               }
             }
           });
-          
+
           setValidMoves(moves);
           setIsCheck(chess.isCheck());
           setIsCheckmate(chess.isCheckmate());
@@ -108,57 +131,41 @@ export const GameProvider = ({ children }: GameProviderProps) => {
         }
       }
     });
-    
+
     return () => unsubscribe();
   }, [gameId, playerColor]);
-  
-  // Helper function to get all squares on the board
-  const getAllSquares = (): string[] => {
-    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const ranks = ['1', '2', '3', '4', '5', '6', '7', '8'];
-    const squares: string[] = [];
-    
-    for (const file of files) {
-      for (const rank of ranks) {
-        squares.push(file + rank);
-      }
-    }
-    
-    return squares;
-  };
-  
+
   useEffect(() => {
     if (!gameData || !auth.currentUser) return;
-    
+
     const userId = auth.currentUser.uid;
     if (gameData.whitePlayer === userId) {
-      setPlayerColor('white');
+      setPlayerColor("white");
       setIsSpectator(false);
     } else if (gameData.blackPlayer === userId) {
-      setPlayerColor('black');
+      setPlayerColor("black");
       setIsSpectator(false);
     } else {
       setPlayerColor(null); // Spectator
       setIsSpectator(true);
     }
-    
-    setAllowSpectators(gameData.allowSpectators || false);
 
+    setAllowSpectators(gameData.allowSpectators || false);
   }, [gameData]);
-  
-  const startNewGame = async (allowSpectating: boolean = false): Promise<string> => {
+
+  const startNewGame = async (allowSpectating: boolean): Promise<string> => {
     try {
       const id = await createGame(allowSpectating);
       if (!id) throw new Error("Failed to create game: No game ID returned");
       setGameId(id);
-      setPlayerColor('white');
+      setPlayerColor("white");
       return id;
     } catch (error) {
       console.error("Error creating game:", error);
       throw error;
     }
   };
-  
+
   const joinExistingGame = async (id: string) => {
     try {
       await joinGame(id);
@@ -169,7 +176,6 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       throw error;
     }
   };
-  
 
   const spectateExistingGame = async (id: string) => {
     try {
@@ -182,41 +188,49 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       throw error;
     }
   };
-  
-  const movePiece = async (from: string, to: string, promotion?: 'q' | 'r' | 'b' | 'n') => {
+
+  const movePiece = async (
+    from: string,
+    to: string,
+    promotion?: "q" | "r" | "b" | "n"
+  ) => {
     if (!gameId || !chessBoard || !playerColor) return;
-    
+
     try {
       // Convert string to Square type
       const fromSquare = from as Square;
-      
+
       // Get piece information
       const piece = chessBoard.get(fromSquare);
       if (!piece) throw new Error("No piece at this position");
-      
-      // Create move object
+
+      // Create move object - only include promotion if it has a value
       const moveData: Move = {
         from,
         to,
         piece: {
           type: getPieceType(piece.type),
-          color: piece.color === 'w' ? 'white' : 'black'
+          color: piece.color === "w" ? "white" : "black",
         },
         player: playerColor,
         timestamp: Date.now(),
-        promotion
       };
-      
+
+      // Only add promotion if it has a value
+      if (promotion) {
+        moveData.promotion = promotion;
+      }
+
       await makeMove(gameId, moveData);
     } catch (error) {
       console.error("Error making move:", error);
       throw error;
     }
   };
-  
+
   const resignCurrentGame = async () => {
     if (!gameId) return;
-    
+
     try {
       await resignGame(gameId);
     } catch (error) {
@@ -224,60 +238,93 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       throw error;
     }
   };
-  
+
   // Helper function: get piece at a specific square
   const getPieceAt = (square: string): Piece => {
     if (!chessBoard) return null;
-    
+
     // Convert string to Square type
     const typedSquare = square as Square;
-    
+
     const piece = chessBoard.get(typedSquare);
     if (!piece) return null;
-    
+
     return {
       type: getPieceType(piece.type),
-      color: piece.color === 'w' ? 'white' : 'black'
+      color: piece.color === "w" ? "white" : "black",
     };
   };
-  
-  // Helper function: convert chess.js piece type to our type
-  const getPieceType = (chessPieceType: string): "pawn" | "rook" | "knight" | "bishop" | "queen" | "king" => {
+
+  // Helper function: convert chess.js piece type to Piece type
+  const getPieceType = (
+    chessPieceType: string
+  ): "pawn" | "rook" | "knight" | "bishop" | "queen" | "king" => {
     switch (chessPieceType) {
-      case 'p': return 'pawn';
-      case 'r': return 'rook';
-      case 'n': return 'knight';
-      case 'b': return 'bishop';
-      case 'q': return 'queen';
-      case 'k': return 'king';
-      default: return 'pawn'; // Shouldn't happen
+      case "p":
+        return "pawn";
+      case "r":
+        return "rook";
+      case "n":
+        return "knight";
+      case "b":
+        return "bishop";
+      case "q":
+        return "queen";
+      case "k":
+        return "king";
+      default:
+        return "pawn"; // Shouldn't happen
     }
   };
-  
-  const isGameOver = gameData?.status === 'completed';
-  const isMyTurn = playerColor !== null && gameData?.currentTurn === playerColor;
-  
+
+  // Helper function: to get all squares on the board
+  const getAllSquares = (): string[] => {
+    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const ranks = ["1", "2", "3", "4", "5", "6", "7", "8"];
+    const squares: string[] = [];
+
+    for (const file of files) {
+      for (const rank of ranks) {
+        squares.push(file + rank);
+      }
+    }
+
+    return squares;
+  };
+
+  const isGameOver = gameData?.status === "completed";
+  const isMyTurn =
+    playerColor !== null && gameData?.currentTurn === playerColor;
+
+  const selectSquare = (square: string | null) => {
+    setSelectedSquare(square);
+  };
+
   return (
-    <GameContext.Provider value={{
-      gameId,
-      gameData,
-      playerColor,
-      chessBoard,
-      isMyTurn,
-      isGameOver,
-      validMoves,
-      startNewGame,
-      joinExistingGame,
-      movePiece,
-      resignCurrentGame,
-      getPieceAt,
-      isCheck,
-      isCheckmate,
-      isDraw,
-      isSpectator,
-      allowSpectators,
-      spectateGame: spectateExistingGame,
-    }}>
+    <GameContext.Provider
+      value={{
+        gameId,
+        gameData,
+        playerColor,
+        chessBoard,
+        isMyTurn,
+        isGameOver,
+        validMoves,
+        startNewGame,
+        joinExistingGame,
+        movePiece,
+        resignCurrentGame,
+        getPieceAt,
+        isCheck,
+        isCheckmate,
+        isDraw,
+        isSpectator,
+        allowSpectators,
+        spectateGame: spectateExistingGame,
+        selectedSquare,
+        selectSquare,
+      }}
+    >
       {children}
     </GameContext.Provider>
   );

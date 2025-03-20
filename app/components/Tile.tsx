@@ -3,58 +3,64 @@ import React from "react";
 import Piece from "./Piece";
 import { useGame } from "../context/GameContext";
 import { TileProps } from "../types/types";
+import { squareToAlgebraic } from "../utils/chessUtils";
 
 const Tile = ({ isLight, position, piece }: TileProps) => {
-  const { 
-    playerColor, 
-    isMyTurn, 
-    validMoves, 
+  const {
+    playerColor,
+    isMyTurn,
+    validMoves,
     movePiece,
     gameData,
-    isGameOver
+    isGameOver,
+    selectedSquare,
+    selectSquare,
   } = useGame();
   const { row, col } = position;
-  
-  // Convert row/col coordinates to algebraic notation (e.g., "e4")
-  const squareToAlgebraic = (row: number, col: number): string => {
-    const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-    return `${files[col]}${ranks[row]}`;
-  };
 
   const algebraicSquare = squareToAlgebraic(row, col);
-  
-  // Check if this square is a valid move destination
-  const isValidMoveDestination = validMoves[algebraicSquare]?.length > 0;
-  
-  // Check if this square is a selected piece
-  const isSelected = Object.keys(validMoves).includes(algebraicSquare);
-  
-  // Check if player can interact with this piece (their color and their turn)
-  const isPlayable = isMyTurn && 
-                     piece?.color === playerColor &&
-                     !isGameOver;
+
+  // Check if this square is the currently selected square
+  const isSelected = selectedSquare === algebraicSquare;
+
+  // Only show valid moves for the selected piece
+  const isValidMoveDestination =
+    selectedSquare && validMoves[selectedSquare]?.includes(algebraicSquare);
+
+  // Check if this piece can be selected (player's piece and their turn)
+  const isSelectablePiece =
+    isMyTurn && 
+    piece?.color === playerColor && 
+    !isGameOver && 
+    validMoves[algebraicSquare]?.length > 0;
 
   const handlePress = () => {
-    if (isGameOver || gameData?.status !== 'active') return;
-    
-    if (isSelected) {
-      // Deselect the piece (no-op in this implementation as we handle selection differently)
+    if (isGameOver || gameData?.status !== "active") return;
+
+    // If this is a valid destination for the selected piece, make the move
+    if (
+      selectedSquare &&
+      validMoves[selectedSquare]?.includes(algebraicSquare)
+    ) {
+      movePiece(selectedSquare, algebraicSquare);
+      selectSquare(null); // Clear selection after move
       return;
     }
-    
-    // If we have a source square with this square as a valid destination
-    for (const [sourceSquare, destinations] of Object.entries(validMoves)) {
-      if (destinations.includes(algebraicSquare)) {
-        // Make the move
-        movePiece(sourceSquare, algebraicSquare);
-        return;
-      }
-    }
-    
-    // If this square has a piece and it's the player's turn
+
+    // If clicking on own piece that has valid moves
     if (piece && piece.color === playerColor && isMyTurn) {
-      // Let Firebase handling of validMoves handle this
+      if (validMoves[algebraicSquare]?.length > 0) {
+        // If already selected, deselect it
+        if (isSelected) {
+          selectSquare(null);
+        } else {
+          // Otherwise, select this piece
+          selectSquare(algebraicSquare);
+        }
+      }
+    } else {
+      // Clicking on empty square or opponent's piece clears selection
+      selectSquare(null);
     }
   };
 
@@ -66,7 +72,7 @@ const Tile = ({ isLight, position, piece }: TileProps) => {
         isLight ? styles.lightSquare : styles.darkSquare,
         isSelected && styles.selected,
         isValidMoveDestination && styles.validMove,
-        isPlayable && styles.playable
+        isSelectablePiece && styles.playable,
       ]}
     >
       {piece && <Piece {...piece} />}
@@ -96,5 +102,5 @@ const styles = StyleSheet.create({
   playable: {
     // Optional: subtle indication that piece can be moved
     opacity: 1,
-  }
+  },
 });

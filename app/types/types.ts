@@ -1,31 +1,3 @@
-// Type for a chess piece
-type Piece = {
-  type: "pawn" | "rook" | "knight" | "bishop" | "queen" | "king";
-  color: "white" | "black";
-} | null;
-
-// Board type
-type Board = Piece[][];
-
-// Position type
-type Position = { row: number; col: number };
-
-// For Tile.tsx
-interface TileProps {
-  isLight: boolean;
-  position: {
-    row: number;
-    col: number;
-  };
-  piece: Piece | null;
-}
-
-// For Piece.tsx
-interface PieceProp {
-  type: string;
-  color: string;
-}
-
 // Firebase types
 type Game = {
   createdAt: number;
@@ -49,6 +21,32 @@ type Move = {
   timestamp: number;
   promotion?: 'q' | 'r' | 'b' | 'n';
 };
+
+// Frontend types
+type Piece = {
+  type: "pawn" | "rook" | "knight" | "bishop" | "queen" | "king";
+  color: "white" | "black";
+} | null;
+
+type Board = Piece[][];
+
+type Position = { row: number; col: number };
+
+// For Tile.tsx
+interface TileProps {
+  isLight: boolean;
+  position: {
+    row: number;
+    col: number;
+  };
+  piece: Piece | null;
+}
+
+// For Piece.tsx
+interface PieceProp {
+  type: string;
+  color: string;
+}
 
 export type { Piece, Board, Position, TileProps, PieceProp, Game, Move };
 

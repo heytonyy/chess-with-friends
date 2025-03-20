@@ -1,11 +1,10 @@
-# Chess React App
+# Chess With Friends
 
-A mobile chess application built with React Native and Expo where you can play against friends or challenge a computer opponent.
+A mobile chess application built with React Native and Expo where you can play against friends, or speculate your friends chess games.
 
 ## Features
 
-- [Progress] Challenge the computer at different difficulty levels
-- [Future] Online multiplayer
+- [INPROGRESS] Online multiplayer
 - [Future] Save and review past games
 - [Future] Chess puzzles
 
@@ -19,10 +18,10 @@ A mobile chess application built with React Native and Expo where you can play a
 
 ```bash
 # Clone the repository
-git clone https://github.com/heytonyy/chess-react-app.git
+git clone https://github.com/heytonyy/chess-with-friends.git
 
 # Navigate to the project directory
-cd chess-react-app
+cd chess-with-friends
 
 # Install dependencies
 npm install
@@ -46,13 +45,15 @@ This app is currently under development. Below is the implementation roadmap:
 ## Project Structure
 
 ```
-chess-react-app/
+chess-with-friends/
 ├── app/         
-├────── (play)/        # Reusable UI components
+├────── (play)/        # Play Screen after auth
 ├────── components/    # Reusable UI components
+├────── config/        # Configuration files (Firebase)
 ├────── constants/     # Constants values (Color Pallette)
-├────── context/       # Context componets
+├────── context/       # Frontend GameContext
 ├────── hooks/         # React use Hooks
+├────── services/      # Service function 
 ├────── types/         # App types
 ├────── utils/         # Utility functions
 ├────── _layout.tsx    # RootLayout

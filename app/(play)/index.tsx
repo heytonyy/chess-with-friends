@@ -31,7 +31,7 @@ const PlayGameScreen = () => {
 
   const handleNewGame = async () => {
     try {
-      const id = await startNewGame();
+      const id = await startNewGame(allowSpectators);
       Alert.alert(
         "Game Created",
         `Game ID: ${id}\nShare this with your opponent!`
