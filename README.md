@@ -46,6 +46,7 @@ This app is currently under development. Below is the implementation roadmap:
 
 ```
 chess-with-friends/
+├── android/           # android build     
 ├── app/         
 ├────── (play)/        # Play Screen after auth
 ├────── components/    # Reusable UI components
@@ -59,7 +60,8 @@ chess-with-friends/
 ├────── _layout.tsx    # RootLayout
 ├────── index.tsx      # Index page to redirect to login/play
 ├────── login.tsx      # Login and Auth Screen
-└── assets/            # Images, fonts, and other static assets
+├── assets/            # Images, fonts, and other static assets
+└── ios/               # ios build
 ```
 
 ## Contributing

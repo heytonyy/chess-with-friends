@@ -3,8 +3,8 @@ type Game = {
   createdAt: number;
   status: "waiting" | "active" | "completed";
   currentTurn: "white" | "black";
-  whitePlayer: string; // use uid
-  blackPlayer: string | null; // use uid
+  whitePlayer: string; // uid
+  blackPlayer: string | null; // uid
   board: string; // FEN string
   moves: Move[];
   winner: "white" | "black" | "draw" | null;

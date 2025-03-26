@@ -1,17 +1,19 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   View,
-  TextInput,
+  TextInput,  
   Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
+  Platform,
 } from "react-native";
+import CustomModal from "../../components/CustomModal";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth, firestore, WebBrowser } from "./config/firebase";
+import { auth, firestore, WebBrowser } from "../../config/firebase";
 import { FirebaseError } from "firebase/app";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { router } from "expo-router";
@@ -38,12 +40,31 @@ interface UserData {
   eloRating: number;
 }
 
+// Define an interface for the alert button
+interface AlertButton {
+  text: string;
+  onPress?: () => void;
+}
+
+// Define an interface for the alert configuration
+interface AlertConfig {
+  title: string;
+  message: string;
+  buttons: AlertButton[];
+}
+
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<AlertConfig>({
+    title: "",
+    message: "",
+    buttons: [{ text: "OK" }],
+  });
 
   const handleRegister = async () => {
     try {
@@ -66,8 +87,19 @@ export default function LoginScreen() {
         eloRating: 1200,
       });
 
-      Alert.alert("Success", "Account created successfully!");
-      router.replace("/(play)");
+      // Use platform-specific alert
+      if (Platform.OS === "web") {
+        setAlertConfig({
+          title: "Success",
+          message: "Account created successfully!",
+          buttons: [{ text: "OK", onPress: () => router.replace("/(play)") }],
+        });
+        setAlertVisible(true);
+      } else {
+        Alert.alert("Success", "Account created successfully!", [
+          { text: "OK", onPress: () => router.replace("/(play)") },
+        ]);
+      }
     } catch (error) {
       handleError(error);
     } finally {
@@ -89,12 +121,25 @@ export default function LoginScreen() {
 
   const handleError = (error: unknown) => {
     setLoading(false);
+    let title = "Error";
+    let message = "An unknown error occurred";
+
     if (error instanceof FirebaseError) {
-      Alert.alert("Firebase Error", `${error.code}: ${error.message}`);
+      title = "Firebase Error";
+      message = `${error.code}: ${error.message}`;
     } else if (error instanceof Error) {
-      Alert.alert("Error", error.message);
+      message = error.message;
+    }
+
+    if (Platform.OS === "web") {
+      setAlertConfig({
+        title,
+        message,
+        buttons: [{ text: "OK" }],
+      });
+      setAlertVisible(true);
     } else {
-      Alert.alert("Error", "An unknown error occurred");
+      Alert.alert(title, message);
     }
   };
 
@@ -175,7 +220,14 @@ export default function LoginScreen() {
         <View style={styles.divider} />
       </View>
 
-      {/* TODO: Social Auth Buttons */}
+      {/* Custom Alert for web platform */}
+      <CustomModal
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
     </View>
   );
 }

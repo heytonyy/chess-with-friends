@@ -1,30 +1,72 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Switch } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "../config/firebase";
+import { auth } from "../../config/firebase";
 import { FirebaseError } from "firebase/app";
 import { signOut } from "firebase/auth";
 import { router } from "expo-router";
-import { useGame } from "../context/GameContext";
-import Board from "../components/Board";
+import { useGame } from "../../context/GameContext";
+import Board from "../../components/Board";
 import { useState } from "react";
+import CustomModal from "../../components/CustomModal";
 
 const PlayGameScreen = () => {
   const user = auth.currentUser;
   const firstInitial = user?.email?.charAt(0).toUpperCase() || "U";
-  const { startNewGame, joinExistingGame, spectateGame, gameId, gameData } = useGame();
+  const { startNewGame, joinExistingGame, spectateGame, gameId, gameData } =
+    useGame();
   const [allowSpectators, setAllowSpectators] = useState(false);
+
+  // State for custom alert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({
+    title: "",
+    message: "",
+    buttons: [{ text: "OK", onPress: () => {} }],
+  });
+
+  // State for text input in custom prompts
+  const [promptInputValue, setPromptInputValue] = useState("");
+  const [isPromptVisible, setIsPromptVisible] = useState(false);
+  const [promptConfig, setPromptConfig] = useState({
+    title: "",
+    message: "",
+    onSubmit: (value: string) => {},
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    buttons = [{ text: "OK", onPress: () => {} }]
+  ) => {
+    setAlertConfig({ title, message, buttons });
+    setAlertVisible(true);
+  };
+
+  const showPrompt = (
+    title: string,
+    message: string,
+    onSubmit: (value: string) => void
+  ) => {
+    setPromptConfig({ title, message, onSubmit });
+    setPromptInputValue("");
+    setIsPromptVisible(true);
+  };
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.replace("/login");
+      router.replace("../(auth)");
     } catch (error: unknown) {
+      let errorMessage = "An unknown error occurred";
+
       if (error instanceof FirebaseError) {
-        Alert.alert("Firebase Error", `${error.code}: ${error.message}`);
+        errorMessage = `${error.code}: ${error.message}`;
+        showAlert("Firebase Error", errorMessage);
       } else if (error instanceof Error) {
-        Alert.alert("Error", error.message);
+        errorMessage = error.message;
+        showAlert("Error", errorMessage);
       } else {
-        Alert.alert("Error", "An unknown error occurred");
+        showAlert("Error", errorMessage);
       }
     }
   };
@@ -32,55 +74,42 @@ const PlayGameScreen = () => {
   const handleNewGame = async () => {
     try {
       const id = await startNewGame(allowSpectators);
-      Alert.alert(
+      showAlert(
         "Game Created",
         `Game ID: ${id}\nShare this with your opponent!`
       );
     } catch (error) {
-      Alert.alert("Error", "Failed to create new game");
+      showAlert("Error", "Failed to create new game");
     }
   };
 
   const handleJoinGame = () => {
-    Alert.prompt("Join Game", "Enter the game ID", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Join",
-        onPress: async (gameId?: string) => {
-          if (gameId) {
-            try {
-              await joinExistingGame(gameId);
-            } catch (error) {
-              Alert.alert("Error", "Failed to join game");
-            }
-          }
-        },
-      },
-    ]);
+    showPrompt("Join Game", "Enter the game ID", async (gameId: string) => {
+      if (gameId) {
+        try {
+          await joinExistingGame(gameId);
+        } catch (error) {
+          showAlert("Error", "Failed to join game");
+        }
+      }
+    });
   };
 
   const handleSpectateGame = () => {
-    Alert.prompt("Spectate Game", "Enter the game ID", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Spectate",
-        onPress: async (gameId?: string) => {
-          if (gameId) {
-            try {
-              await spectateGame(gameId);
-            } catch (error: any) {
-              Alert.alert("Error", error.message || "Failed to spectate game");
-            }
-          }
-        },
-      },
-    ]);
+    showPrompt("Spectate Game", "Enter the game ID", async (gameId: string) => {
+      if (gameId) {
+        try {
+          await spectateGame(gameId);
+        } catch (error: any) {
+          showAlert("Error", error.message || "Failed to spectate game");
+        }
+      }
+    });
+  };
+
+  const handlePromptSubmit = () => {
+    setIsPromptVisible(false);
+    promptConfig.onSubmit(promptInputValue);
   };
 
   return (
@@ -112,7 +141,10 @@ const PlayGameScreen = () => {
             <TouchableOpacity style={styles.button} onPress={handleJoinGame}>
               <Text style={styles.buttonText}>Join Game</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={handleSpectateGame}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSpectateGame}
+            >
               <Text style={styles.buttonText}>Spectate Game</Text>
             </TouchableOpacity>
           </View>
@@ -129,6 +161,37 @@ const PlayGameScreen = () => {
           </View>
         )}
       </View>
+
+      {/* Alert modal */}
+      <CustomModal
+        visible={alertVisible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onDismiss={() => setAlertVisible(false)}
+      />
+
+      {/* Custom Prompt modal with input field */}
+      <CustomModal
+        visible={isPromptVisible}
+        title={promptConfig.title}
+        message={promptConfig.message}
+        buttons={[
+          {
+            text: "Cancel",
+            onPress: () => setIsPromptVisible(false),
+            style: { backgroundColor: "#999" },
+          },
+          {
+            text: "OK",
+            onPress: handlePromptSubmit,
+          },
+        ]}
+        onDismiss={() => setIsPromptVisible(false)}
+        showInput={true}
+        inputValue={promptInputValue}
+        onChangeText={setPromptInputValue}
+      />
     </SafeAreaView>
   );
 };

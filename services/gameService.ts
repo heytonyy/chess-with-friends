@@ -9,14 +9,15 @@ import {
 } from "firebase/database";
 import { db, auth } from "../config/firebase";
 import { Game, Move } from "../types/types";
-import { Chess } from 'chess.js';
+import { Chess } from "chess.js";
 
 export const createGame = async (allowSpectators: boolean) => {
   const userId = auth.currentUser?.uid;
 
   if (!userId) throw new Error("User not authenticated");
 
-  const startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  const startingFEN =
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
   const gameRef = push(ref(db, "games"));
   await set(gameRef, {
@@ -30,7 +31,7 @@ export const createGame = async (allowSpectators: boolean) => {
     winner: null,
     lastActivity: Date.now(),
     allowSpectators: allowSpectators,
-    spectators: []
+    spectators: [],
   });
 
   return gameRef.key;
@@ -45,15 +46,16 @@ export const spectateGame = async (gameId: string) => {
   const game: Game = snapshot.val();
 
   if (!game) throw new Error("Game not found");
-  
+
   // Check if spectating is allowed
-  if (!game.allowSpectators) throw new Error("This game does not allow spectators");
-  
+  if (!game.allowSpectators)
+    throw new Error("This game does not allow spectators");
+
   // Check if user is already a player
   if (game.whitePlayer === userId || game.blackPlayer === userId) {
     return; // No need to add as spectator if already a player
   }
-  
+
   // Add user to spectators list if not already there
   const spectators = game.spectators || [];
   if (!spectators.includes(userId)) {
@@ -108,27 +110,27 @@ export const makeMove = async (gameId: string, move: Move) => {
 
   // Initialize chess.js with current position
   const chess = new Chess(game.board);
-  
+
   // Validate the move is legal
   try {
     const moveOptions: any = {
       from: move.from,
-      to: move.to
+      to: move.to,
     };
-    
+
     // Only include promotion if it exists
     if (move.promotion) {
       moveOptions.promotion = move.promotion;
     }
-    
+
     chess.move(moveOptions);
   } catch (error) {
     throw new Error("Invalid move");
   }
-  
+
   // Get the new FEN after move
   const newFEN = chess.fen();
-  
+
   // Add move to history - create a clean object without undefined values
   const moveToStore: Partial<Move> = {
     from: move.from,
@@ -137,12 +139,12 @@ export const makeMove = async (gameId: string, move: Move) => {
     player: isWhite ? "white" : "black",
     timestamp: Date.now(),
   };
-  
+
   // Only add promotion if it exists
   if (move.promotion) {
     moveToStore.promotion = move.promotion;
   }
-  
+
   const newMoveRef = push(ref(db, `games/${gameId}/moves`));
   await set(newMoveRef, moveToStore);
 
@@ -150,13 +152,13 @@ export const makeMove = async (gameId: string, move: Move) => {
   const updateData: Partial<Game> = {
     board: newFEN,
     currentTurn: game.currentTurn === "white" ? "black" : "white",
-    lastActivity: Date.now()
+    lastActivity: Date.now(),
   };
 
   // Check for game over
   if (chess.isGameOver()) {
     updateData.status = "completed";
-    
+
     if (chess.isCheckmate()) {
       // Current player won since they just made the checkmate move
       updateData.winner = game.currentTurn;
@@ -174,9 +176,9 @@ export const calculateNewFEN = (currentFEN: string, move: Move): string => {
   const chess = new Chess(currentFEN);
   try {
     chess.move({
-      from: move.from, 
+      from: move.from,
       to: move.to,
-      promotion: move.promotion
+      promotion: move.promotion,
     });
     return chess.fen();
   } catch (error) {
@@ -222,13 +224,14 @@ export const resignGame = async (gameId: string) => {
   const isWhite = game.whitePlayer === userId;
   const isBlack = game.blackPlayer === userId;
 
-  if (!isWhite && !isBlack) throw new Error("You are not a player in this game");
+  if (!isWhite && !isBlack)
+    throw new Error("You are not a player in this game");
 
   // Set the other player as winner
   await update(gameRef, {
     status: "completed",
     winner: isWhite ? "black" : "white",
-    lastActivity: Date.now()
+    lastActivity: Date.now(),
   });
 };
 

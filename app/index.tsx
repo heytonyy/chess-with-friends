@@ -1,7 +1,7 @@
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { auth } from "./config/firebase";
+import { auth } from "../config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function Index() {
@@ -28,8 +28,8 @@ export default function Index() {
 
   // Redirect based on auth state
   if (isAuthenticated) {
-    return <Redirect href="/(play)" />;
+    return <Redirect href="./(play)" />;
   } else {
-    return <Redirect href="/login" />;
+    return <Redirect href="./(auth)" />;
   }
 }
