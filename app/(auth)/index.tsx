@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import {
   View,
-  TextInput,  
+  TextInput,
   Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
   Platform,
 } from "react-native";
-import CustomModal from "../../components/CustomModal";
+import CustomModal from "@/components/CustomModal";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth, firestore, WebBrowser } from "../../config/firebase";
+import { auth, firestore, WebBrowser } from "@/config/firebase";
 import { FirebaseError } from "firebase/app";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { router } from "expo-router";

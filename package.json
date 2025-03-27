@@ -4,12 +4,16 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "clean": "rm -rf node_modules && rm -rf .expo && npm install",
+    "clean:metro": "expo start --clear",
+    "clean:full": "rm -rf node_modules && rm -rf .expo && rm -rf package-lock.json && npm install",
+    "clean:watchman": "watchman watch-del-all",
+    "reset:all": "npm run clean:watchman && npm run clean:full"
   },
   "jest": {
     "preset": "jest-expo"

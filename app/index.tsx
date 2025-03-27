@@ -1,7 +1,7 @@
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { auth } from "../config/firebase";
+import { auth } from "@/config/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 export default function Index() {

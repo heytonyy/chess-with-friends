@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import { GameProvider } from "../../context/GameContext";
+import { GameProvider } from "@/context/GameContext";
 
 export default function PlayScreenLayout() {
   return (

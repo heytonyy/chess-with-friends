@@ -1,20 +1,16 @@
-import { View, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "../../config/firebase";
-import { FirebaseError } from "firebase/app";
-import { signOut } from "firebase/auth";
-import { router } from "expo-router";
-import { useGame } from "../../context/GameContext";
-import Board from "../../components/Board";
 import { useState } from "react";
-import CustomModal from "../../components/CustomModal";
+import { useGame } from "@/context/GameContext";
+import Board from "@/components/Board";
+import CustomModal from "@/components/CustomModal";
+import GameHeader from "@/components/GameHeader";
+import GameOptions from "@/components/GameOptions";
+import WaitingScreen from "@/components/WaitingScreen";
 
 const PlayGameScreen = () => {
-  const user = auth.currentUser;
-  const firstInitial = user?.email?.charAt(0).toUpperCase() || "U";
   const { startNewGame, joinExistingGame, spectateGame, gameId, gameData } =
     useGame();
-  const [allowSpectators, setAllowSpectators] = useState(false);
 
   // State for custom alert
   const [alertVisible, setAlertVisible] = useState(false);
@@ -52,42 +48,18 @@ const PlayGameScreen = () => {
     setIsPromptVisible(true);
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      router.replace("../(auth)");
-    } catch (error: unknown) {
-      let errorMessage = "An unknown error occurred";
-
-      if (error instanceof FirebaseError) {
-        errorMessage = `${error.code}: ${error.message}`;
-        showAlert("Firebase Error", errorMessage);
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-        showAlert("Error", errorMessage);
-      } else {
-        showAlert("Error", errorMessage);
-      }
-    }
-  };
-
-  const handleNewGame = async () => {
-    try {
-      const id = await startNewGame(allowSpectators);
-      showAlert(
-        "Game Created",
-        `Game ID: ${id}\nShare this with your opponent!`
-      );
-    } catch (error) {
-      showAlert("Error", "Failed to create new game");
-    }
+  const handleGameCreated = (gameCode: string) => {
+    showAlert(
+      "Game Created",
+      `Game Code: ${gameCode}\nShare this with your opponent!`
+    );
   };
 
   const handleJoinGame = () => {
-    showPrompt("Join Game", "Enter the game ID", async (gameId: string) => {
-      if (gameId) {
+    showPrompt("Join Game", "Enter the game code", async (gameCode: string) => {
+      if (gameCode) {
         try {
-          await joinExistingGame(gameId);
+          await joinExistingGame(gameCode);
         } catch (error) {
           showAlert("Error", "Failed to join game");
         }
@@ -96,15 +68,19 @@ const PlayGameScreen = () => {
   };
 
   const handleSpectateGame = () => {
-    showPrompt("Spectate Game", "Enter the game ID", async (gameId: string) => {
-      if (gameId) {
-        try {
-          await spectateGame(gameId);
-        } catch (error: any) {
-          showAlert("Error", error.message || "Failed to spectate game");
+    showPrompt(
+      "Spectate Game",
+      "Enter the game code",
+      async (gameCode: string) => {
+        if (gameCode) {
+          try {
+            await spectateGame(gameCode);
+          } catch (error: any) {
+            showAlert("Error", error.message || "Failed to spectate game");
+          }
         }
       }
-    });
+    );
   };
 
   const handlePromptSubmit = () => {
@@ -115,50 +91,25 @@ const PlayGameScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Chess</Text>
-          <TouchableOpacity onPress={handleSignOut} style={styles.profileIcon}>
-            <Text style={styles.profileText}>{firstInitial}</Text>
-          </TouchableOpacity>
-        </View>
+        <GameHeader onError={showAlert} />
 
         {!gameId ? (
-          <View style={styles.gameOptions}>
-            <View style={styles.newGameContainer}>
-              <TouchableOpacity style={styles.button} onPress={handleNewGame}>
-                <Text style={styles.buttonText}>New Game</Text>
-              </TouchableOpacity>
-              <View style={styles.spectatorOption}>
-                <Text style={styles.spectatorText}>Allow Spectators:</Text>
-                <Switch
-                  value={allowSpectators}
-                  onValueChange={setAllowSpectators}
-                  trackColor={{ false: "#767577", true: "#81b0ff" }}
-                  thumbColor={allowSpectators ? "#007AFF" : "#f4f3f4"}
-                />
-              </View>
-            </View>
-            <TouchableOpacity style={styles.button} onPress={handleJoinGame}>
-              <Text style={styles.buttonText}>Join Game</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleSpectateGame}
-            >
-              <Text style={styles.buttonText}>Spectate Game</Text>
-            </TouchableOpacity>
-          </View>
+          <GameOptions
+            startNewGame={startNewGame}
+            joinExistingGame={joinExistingGame}
+            spectateGame={spectateGame}
+            onError={showAlert}
+            onGameCreated={handleGameCreated}
+            onJoinGame={handleJoinGame}
+            onSpectateGame={handleSpectateGame}
+          />
+        ) : gameData?.status === "waiting" ? (
+          <WaitingScreen
+            gameCode={gameData.gameCode}
+            allowSpectators={gameData.allowSpectators}
+          />
         ) : (
-          <View style={styles.content}>
-            {gameData?.status === "waiting" ? (
-              <Text style={styles.waitingText}>
-                Waiting for opponent to join...{"\n"}Game ID: {gameId}
-                {gameData.allowSpectators && "\n(Spectators allowed)"}
-              </Text>
-            ) : (
-              <Board />
-            )}
-          </View>
+          <Board />
         )}
       </View>
 
@@ -205,72 +156,5 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#007AFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  profileText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-  },
-  gameOptions: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 16,
-  },
-  button: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    width: 200,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  waitingText: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 16,
-  },
-  newGameContainer: {
-    alignItems: "center",
-  },
-  spectatorOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  spectatorText: {
-    marginRight: 8,
-    fontSize: 14,
   },
 });

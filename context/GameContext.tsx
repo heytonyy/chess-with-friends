@@ -3,17 +3,18 @@ import {
   subscribeToGame,
   makeMove,
   createGame,
-  joinGame,
   resignGame,
-  spectateGame,
-} from "../services/gameService";
-import { auth } from "../config/firebase";
-import { Game, Move, Piece } from "../types/types";
+  joinGameByCode,
+  spectateGameByCode,
+} from "@/services/gameService";
+import { auth } from "@/config/firebase";
+import { Game, Move, Piece } from "@/types/types";
 import { ReactNode } from "react";
 import { Chess, Square } from "chess.js";
 
 interface GameContextType {
   gameId: string | null;
+  gameCode: string | null;
   gameData: Game | null;
   playerColor: "white" | "black" | null;
   chessBoard: Chess | null;
@@ -21,7 +22,7 @@ interface GameContextType {
   isGameOver: boolean;
   validMoves: Record<string, string[]>; // From square -> array of valid destinations
   startNewGame: (allowSpectating: boolean) => Promise<string>;
-  joinExistingGame: (id: string) => Promise<void>;
+  joinExistingGame: (gameCode: string) => Promise<void>;
   movePiece: (
     from: string,
     to: string,
@@ -34,13 +35,14 @@ interface GameContextType {
   isDraw: boolean;
   isSpectator: boolean;
   allowSpectators: boolean;
-  spectateGame: (id: string) => Promise<void>;
+  spectateGame: (gameCode: string) => Promise<void>;
   selectedSquare: string | null;
   selectSquare: (square: string | null) => void;
 }
 
 const GameContext = createContext<GameContextType>({
   gameId: null,
+  gameCode: null,
   gameData: null,
   playerColor: null,
   chessBoard: null,
@@ -68,6 +70,7 @@ interface GameProviderProps {
 
 export const GameProvider = ({ children }: GameProviderProps) => {
   const [gameId, setGameId] = useState<string | null>(null);
+  const [gameCode, setGameCode] = useState<string | null>(null);
   const [gameData, setGameData] = useState<Game | null>(null);
   const [playerColor, setPlayerColor] = useState<"white" | "black" | null>(
     null
@@ -87,6 +90,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
     const unsubscribe = subscribeToGame(gameId, (data) => {
       setGameData(data);
+      setGameCode(data.gameCode); // Set gameCode from the game data
 
       // Update local chess.js instance based on FEN
       if (data.board) {
@@ -166,21 +170,21 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     }
   };
 
-  const joinExistingGame = async (id: string) => {
+  const joinExistingGame = async (gameCode: string) => {
     try {
-      await joinGame(id);
-      setGameId(id);
-      // Color will be set by the useEffect that checks user ID against game data
+      const gameId = await joinGameByCode(gameCode);
+      if (!gameId) throw new Error("Failed to join game: No game ID returned");
+      setGameId(gameId);
     } catch (error) {
       console.error("Error joining game:", error);
       throw error;
     }
   };
 
-  const spectateExistingGame = async (id: string) => {
+  const spectateExistingGame = async (gameCode: string) => {
     try {
-      await spectateGame(id);
-      setGameId(id);
+      const gameId = await spectateGameByCode(gameCode);
+      setGameId(gameId);
       setIsSpectator(true);
       setPlayerColor(null); // Spectators don't have a color
     } catch (error) {
@@ -294,7 +298,9 @@ export const GameProvider = ({ children }: GameProviderProps) => {
 
   const isGameOver = gameData?.status === "completed";
   const isMyTurn =
-    playerColor !== null && gameData?.currentTurn === playerColor;
+    !isSpectator &&
+    playerColor !== null &&
+    gameData?.currentTurn === playerColor;
 
   const selectSquare = (square: string | null) => {
     setSelectedSquare(square);
@@ -304,6 +310,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     <GameContext.Provider
       value={{
         gameId,
+        gameCode,
         gameData,
         playerColor,
         chessBoard,

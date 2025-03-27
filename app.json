@@ -17,8 +17,7 @@
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.heytonyy.chesswithfriends",
-      "ndkVersion": "26.1.10909125"
+      "package": "com.heytonyy.chesswithfriends"
     },
     "web": {
       "bundler": "metro",

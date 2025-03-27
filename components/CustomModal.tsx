@@ -70,7 +70,7 @@ const CustomModal = ({
                 ]}
                 onPress={() => {
                   if (button.onPress) button.onPress();
-                  if (onDismiss && button.text !== "OK") onDismiss();
+                  if (onDismiss) onDismiss();
                 }}
               >
                 <Text style={[styles.buttonText, button.textStyle]}>

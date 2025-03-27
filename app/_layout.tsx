@@ -4,7 +4,7 @@ import {
   DarkTheme,
   DefaultTheme,
 } from "@react-navigation/native";
-import useColorScheme from "../hooks/useColorScheme";
+import useColorScheme from "@/hooks/useColorScheme";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

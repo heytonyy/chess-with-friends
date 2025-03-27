@@ -9,8 +9,9 @@ type Game = {
   moves: Move[];
   winner: "white" | "black" | "draw" | null;
   lastActivity: number;
-  allowSpectators: boolean; 
-  spectators?: string[]; 
+  allowSpectators: boolean;
+  spectators?: string[];
+  gameCode: string; // Unique code for joining/spectating games
 };
 
 type Move = {
@@ -19,7 +20,7 @@ type Move = {
   piece: Piece;
   player: "white" | "black";
   timestamp: number;
-  promotion?: 'q' | 'r' | 'b' | 'n';
+  promotion?: "q" | "r" | "b" | "n";
 };
 
 // Frontend types

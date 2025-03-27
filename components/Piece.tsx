@@ -1,7 +1,7 @@
 import { StyleSheet, Image, View } from "react-native";
 import React from "react";
-import useGamePiece from "../hooks/useGamePiece";
-import { Piece as PieceType } from "../types/types";
+import useGamePiece from "@/hooks/useGamePiece";
+import { Piece as PieceType } from "@/types/types";
 
 const Piece = (data: PieceType) => {
   const sourceImage = useGamePiece(data);

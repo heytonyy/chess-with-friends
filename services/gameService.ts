@@ -6,10 +6,73 @@ import {
   get,
   update,
   Unsubscribe,
+  query,
+  orderByChild,
+  equalTo,
 } from "firebase/database";
-import { db, auth } from "../config/firebase";
-import { Game, Move } from "../types/types";
+import { db, auth } from "@/config/firebase";
+import { Game, Move } from "@/types/types";
 import { Chess } from "chess.js";
+
+// Generate a random game code (6 characters, alphanumeric)
+const generateGameCode = (): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
+
+// Check if a game code is already in use
+const isGameCodeUnique = async (code: string): Promise<boolean> => {
+  try {
+    const gamesRef = ref(db, "games");
+    const gamesQuery = query(gamesRef, orderByChild("gameCode"), equalTo(code));
+    const snapshot = await get(gamesQuery);
+    return !snapshot.exists();
+  } catch (error) {
+    console.error("Error checking game code uniqueness:", error);
+    return false; // If there's an error, assume the code is not unique
+  }
+};
+
+// Generate a unique game code
+const generateUniqueGameCode = async (): Promise<string> => {
+  let code: string;
+  let isUnique = false;
+  let attempts = 0;
+  const maxAttempts = 10;
+
+  while (!isUnique && attempts < maxAttempts) {
+    code = generateGameCode();
+    isUnique = await isGameCodeUnique(code);
+    attempts++;
+  }
+
+  if (!isUnique) {
+    throw new Error(
+      "Failed to generate unique game code after multiple attempts"
+    );
+  }
+
+  return code!;
+};
+
+// Look up a game by its code
+export const getGameByCode = async (code: string): Promise<Game | null> => {
+  const gamesRef = ref(db, "games");
+  const gamesQuery = query(gamesRef, orderByChild("gameCode"), equalTo(code));
+  const snapshot = await get(gamesQuery);
+
+  if (!snapshot.exists()) {
+    return null;
+  }
+
+  // Get the first (and should be only) game with this code
+  const gameData = Object.values(snapshot.val())[0] as Game;
+  return gameData;
+};
 
 export const createGame = async (allowSpectators: boolean) => {
   const userId = auth.currentUser?.uid;
@@ -19,8 +82,14 @@ export const createGame = async (allowSpectators: boolean) => {
   const startingFEN =
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+  // Generate a unique game code
+  const gameCode = await generateUniqueGameCode();
+
+  // Create the game with a push
   const gameRef = push(ref(db, "games"));
-  await set(gameRef, {
+
+  // Create the game data
+  const gameData = {
     createdAt: Date.now(),
     status: "waiting",
     currentTurn: "white",
@@ -32,7 +101,11 @@ export const createGame = async (allowSpectators: boolean) => {
     lastActivity: Date.now(),
     allowSpectators: allowSpectators,
     spectators: [],
-  });
+    gameCode: gameCode,
+  };
+
+  // Set the game data
+  await set(gameRef, gameData);
 
   return gameRef.key;
 };
@@ -82,6 +155,41 @@ export const joinGame = async (gameId: string) => {
   });
 
   return gameRef.key;
+};
+
+export const joinGameByCode = async (gameCode: string) => {
+  const game = await getGameByCode(gameCode);
+  if (!game) throw new Error("Game not found");
+
+  // Get the game ID from the game object
+  const gamesRef = ref(db, "games");
+  const gamesQuery = query(
+    gamesRef,
+    orderByChild("gameCode"),
+    equalTo(gameCode)
+  );
+  const snapshot = await get(gamesQuery);
+  const gameId = Object.keys(snapshot.val())[0];
+
+  return joinGame(gameId);
+};
+
+export const spectateGameByCode = async (gameCode: string) => {
+  const game = await getGameByCode(gameCode);
+  if (!game) throw new Error("Game not found");
+
+  // Get the game ID from the game object
+  const gamesRef = ref(db, "games");
+  const gamesQuery = query(
+    gamesRef,
+    orderByChild("gameCode"),
+    equalTo(gameCode)
+  );
+  const snapshot = await get(gamesQuery);
+  const gameId = Object.keys(snapshot.val())[0];
+
+  await spectateGame(gameId);
+  return gameId;
 };
 
 export const makeMove = async (gameId: string, move: Move) => {
@@ -235,11 +343,11 @@ export const resignGame = async (gameId: string) => {
   });
 };
 
-// Subscribe to game updates
 interface GameUpdateCallback {
   (gameData: Game): void;
 }
 
+// Subscribe to game updates
 export const subscribeToGame = (
   gameId: string,
   onUpdate: GameUpdateCallback

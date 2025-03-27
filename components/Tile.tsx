@@ -1,9 +1,9 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 import React from "react";
-import Piece from "./Piece";
-import { useGame } from "../context/GameContext";
-import { TileProps } from "../types/types";
-import { squareToAlgebraic } from "../utils/chessUtils";
+import Piece from "@/components/Piece";
+import { useGame } from "@/context/GameContext";
+import { TileProps } from "@/types/types";
+import { squareToAlgebraic } from "@/utils/chessUtils";
 
 const Tile = ({ isLight, position, piece }: TileProps) => {
   const {
@@ -29,9 +29,9 @@ const Tile = ({ isLight, position, piece }: TileProps) => {
 
   // Check if this piece can be selected (player's piece and their turn)
   const isSelectablePiece =
-    isMyTurn && 
-    piece?.color === playerColor && 
-    !isGameOver && 
+    isMyTurn &&
+    piece?.color === playerColor &&
+    !isGameOver &&
     validMoves[algebraicSquare]?.length > 0;
 
   const handlePress = () => {
