@@ -3,7 +3,7 @@ import React from "react";
 import useGamePiece from "@/hooks/useGamePiece";
 import { Piece as PieceType } from "@/types/types";
 
-const Piece = (data: PieceType) => {
+export const Piece = (data: PieceType) => {
   const sourceImage = useGamePiece(data);
 
   return (
@@ -16,8 +16,6 @@ const Piece = (data: PieceType) => {
     </View>
   );
 };
-
-export default Piece;
 
 const styles = StyleSheet.create({
   container: {

@@ -1,10 +1,11 @@
 import { StyleSheet, View, Text } from "react-native";
 import React, { useEffect, useState } from "react";
-import Tile from "@/components/Tile";
+import { Tile } from "./Tile";
 import { useGame } from "@/context/GameContext";
-import { Piece } from "@/types/types";
+import { Board } from "@/types/types";
+import { convertFENToBoardArray } from "@/utils/chessUtils";
 
-const Board = () => {
+export const GameBoard = () => {
   const {
     chessBoard,
     playerColor,
@@ -15,59 +16,16 @@ const Board = () => {
     gameCode,
   } = useGame();
 
-  const [boardState, setBoardState] = useState<Array<Array<Piece | null>>>([]);
+  const [boardState, setBoardState] = useState<Board>([]);
 
   // Convert FEN representation to 2D board array
   useEffect(() => {
     if (!chessBoard) return;
 
-    const newBoard: Array<Array<Piece | null>> = Array(8)
-      .fill(null)
-      .map(() => Array(8).fill(null));
-
-    // Get all squares to iterate through
-    const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-    const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"]; // Reversed for display
-
-    for (let rankIndex = 0; rankIndex < 8; rankIndex++) {
-      for (let fileIndex = 0; fileIndex < 8; fileIndex++) {
-        const square = `${files[fileIndex]}${ranks[rankIndex]}`;
-        const squareTyped = square as any; // Type casting for chess.js
-
-        const piece = chessBoard.get(squareTyped);
-        if (piece) {
-          newBoard[rankIndex][fileIndex] = {
-            type: getPieceType(piece.type),
-            color: piece.color === "w" ? "white" : "black",
-          };
-        }
-      }
-    }
+    const newBoard = convertFENToBoardArray(chessBoard);
 
     setBoardState(newBoard);
   }, [chessBoard]);
-
-  // Convert chess.js piece type to our app's type
-  const getPieceType = (
-    chessPieceType: string
-  ): "pawn" | "rook" | "knight" | "bishop" | "queen" | "king" => {
-    switch (chessPieceType) {
-      case "p":
-        return "pawn";
-      case "r":
-        return "rook";
-      case "n":
-        return "knight";
-      case "b":
-        return "bishop";
-      case "q":
-        return "queen";
-      case "k":
-        return "king";
-      default:
-        return "pawn"; // Fallback
-    }
-  };
 
   // Flip board based on player color
   const renderBoard = () => {
@@ -155,8 +113,6 @@ const Board = () => {
     </View>
   );
 };
-
-export default Board;
 
 const styles = StyleSheet.create({
   container: {

@@ -1,20 +1,22 @@
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { LoadingSpinner } from "./LoadingSpinner";
 
 interface WaitingScreenProps {
   gameCode: string;
   allowSpectators: boolean;
 }
 
-const WaitingScreen = ({ gameCode, allowSpectators }: WaitingScreenProps) => {
+export const WaitingScreen = ({
+  gameCode,
+  allowSpectators,
+}: WaitingScreenProps) => {
+  const message = `Waiting for opponent to join...\nGame Code: ${gameCode}${
+    allowSpectators ? "\n(Spectators allowed)" : ""
+  }`;
+
   return (
     <View style={styles.content}>
-      <View>
-        <ActivityIndicator size="large" />
-      </View>
-      <Text style={styles.waitingText}>
-        Waiting for opponent to join...{"\n"}Game Code: {gameCode}
-        {allowSpectators && "\n(Spectators allowed)"}
-      </Text>
+      <LoadingSpinner message={message} />
     </View>
   );
 };
@@ -22,15 +24,6 @@ const WaitingScreen = ({ gameCode, allowSpectators }: WaitingScreenProps) => {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 16,
   },
-  waitingText: {
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 16,
-  },
 });
-
-export default WaitingScreen;

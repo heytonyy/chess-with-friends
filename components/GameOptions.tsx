@@ -13,7 +13,7 @@ interface GameOptionsProps {
   onSpectateGame: () => void;
 }
 
-const GameOptions = ({
+export const GameOptions = ({
   startNewGame,
   onError,
   onGameCreated,
@@ -107,5 +107,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-
-export default GameOptions;

@@ -1,5 +1,7 @@
+import { serverTimestamp } from "firebase/firestore";
+
 // Firebase types
-type Game = {
+export interface Game {
   createdAt: number;
   status: "waiting" | "active" | "completed";
   currentTurn: "white" | "black";
@@ -14,7 +16,7 @@ type Game = {
   gameCode: string; // Unique code for joining/spectating games
 };
 
-type Move = {
+export interface Move {
   from: string;
   to: string;
   piece: Piece;
@@ -23,18 +25,18 @@ type Move = {
   promotion?: "q" | "r" | "b" | "n";
 };
 
-// Frontend types
-type Piece = {
+// Chess types
+export type Piece = {
   type: "pawn" | "rook" | "knight" | "bishop" | "queen" | "king";
   color: "white" | "black";
 } | null;
 
-type Board = Piece[][];
+export type Board = Piece[][];
 
-type Position = { row: number; col: number };
+export type Position = { row: number; col: number };
 
-// For Tile.tsx
-interface TileProps {
+// Board compoenent interfaces
+export interface TileProps {
   isLight: boolean;
   position: {
     row: number;
@@ -43,15 +45,28 @@ interface TileProps {
   piece: Piece | null;
 }
 
-// For Piece.tsx
-interface PieceProp {
+export interface PieceProp {
   type: string;
   color: string;
 }
 
-export type { Piece, Board, Position, TileProps, PieceProp, Game, Move };
+// Auth component interfaces
+export interface AlertConfig {
+  title: string;
+  message: string;
+  buttons: Array<{
+    text: string;
+    onPress?: () => void;
+  }>;
+}
 
-// To satisfy expo-router needing a default export
-export default function nullComponent() {
-  return null;
+export interface UserData {
+  username: string;
+  email: string | null;
+  createdAt: ReturnType<typeof serverTimestamp>;
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  eloRating: number;
 }

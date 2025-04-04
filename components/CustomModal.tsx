@@ -1,20 +1,11 @@
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  StyleProp,
-  TextStyle,
-  ViewStyle,
-  TextInput,
-} from "react-native";
+import { Modal, View, Text, StyleSheet } from "react-native";
+import { CustomButton } from "./CustomButton";
+import { CustomTextInput } from "./CustomTextInput";
 
 interface ButtonProps {
   text: string;
   onPress?: () => void;
-  style?: StyleProp<ViewStyle>;
-  textStyle?: StyleProp<TextStyle>;
+  variant?: "primary" | "secondary";
 }
 
 interface CustomModalProps {
@@ -28,7 +19,7 @@ interface CustomModalProps {
   onChangeText?: (text: string) => void;
 }
 
-const CustomModal = ({
+export const CustomModal = ({
   visible,
   title,
   message,
@@ -50,33 +41,27 @@ const CustomModal = ({
           {title && <Text style={styles.title}>{title}</Text>}
           <Text style={styles.message}>{message}</Text>
 
-          {showInput && (
-            <TextInput
-              style={styles.input}
+          {showInput && onChangeText && (
+            <CustomTextInput
+              placeholder=""
               value={inputValue}
               onChangeText={onChangeText}
-              autoFocus
+              autoCapitalize="none"
             />
           )}
 
           <View style={styles.buttonContainer}>
             {buttons.map((button, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.button,
-                  index > 0 && { marginLeft: 8 },
-                  button.style,
-                ]}
-                onPress={() => {
-                  if (button.onPress) button.onPress();
-                  if (onDismiss) onDismiss();
-                }}
-              >
-                <Text style={[styles.buttonText, button.textStyle]}>
-                  {button.text}
-                </Text>
-              </TouchableOpacity>
+              <View key={index} style={[index > 0 && { marginLeft: 8 }]}>
+                <CustomButton
+                  title={button.text}
+                  onPress={() => {
+                    if (button.onPress) button.onPress();
+                    if (onDismiss) onDismiss();
+                  }}
+                  variant={button.variant || "primary"}
+                />
+              </View>
             ))}
           </View>
         </View>
@@ -96,7 +81,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderRadius: 10,
     padding: 20,
-    alignItems: "center",
+    alignItems: "stretch",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -119,30 +104,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-    padding: 8,
-    marginBottom: 16,
-    width: "100%",
-  },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "center",
   },
-  button: {
-    backgroundColor: "#2196F3",
-    borderRadius: 5,
-    padding: 10,
-    elevation: 2,
-    minWidth: 80,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
 });
-
-export default CustomModal;

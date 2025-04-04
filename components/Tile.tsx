@@ -1,11 +1,11 @@
 import { StyleSheet, TouchableOpacity } from "react-native";
 import React from "react";
-import Piece from "@/components/Piece";
+import { Piece } from "@/components/Piece";
 import { useGame } from "@/context/GameContext";
 import { TileProps } from "@/types/types";
 import { squareToAlgebraic } from "@/utils/chessUtils";
 
-const Tile = ({ isLight, position, piece }: TileProps) => {
+export const Tile = ({ isLight, position, piece }: TileProps) => {
   const {
     playerColor,
     isMyTurn,
@@ -79,8 +79,6 @@ const Tile = ({ isLight, position, piece }: TileProps) => {
     </TouchableOpacity>
   );
 };
-
-export default Tile;
 
 const styles = StyleSheet.create({
   tile: {

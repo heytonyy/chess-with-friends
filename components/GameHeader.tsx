@@ -9,7 +9,7 @@ interface GameHeaderProps {
   onError: (title: string, message: string) => void;
 }
 
-const GameHeader = ({ onError }: GameHeaderProps) => {
+export const GameHeader = ({ onError }: GameHeaderProps) => {
   const user = auth.currentUser;
   const firstInitial = user?.email?.charAt(0).toUpperCase() || "U";
   const [isMenuVisible, setIsMenuVisible] = useState(false);
@@ -17,7 +17,7 @@ const GameHeader = ({ onError }: GameHeaderProps) => {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      router.replace("../(auth)");
+      router.replace("../(auth)/login");
     } catch (error: unknown) {
       let errorMessage = "An unknown error occurred";
 
@@ -139,5 +139,3 @@ const styles = StyleSheet.create({
     color: "#999",
   },
 });
-
-export default GameHeader;

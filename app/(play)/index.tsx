@@ -2,73 +2,73 @@ import { View, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useGame } from "@/context/GameContext";
-import Board from "@/components/Board";
-import CustomModal from "@/components/CustomModal";
-import GameHeader from "@/components/GameHeader";
-import GameOptions from "@/components/GameOptions";
-import WaitingScreen from "@/components/WaitingScreen";
+import { GameBoard } from "@/components/GameBoard";
+import { CustomModal } from "@/components/CustomModal";
+import { GameHeader } from "@/components/GameHeader";
+import { GameOptions } from "@/components/GameOptions";
+import { WaitingScreen } from "@/components/WaitingScreen";
 
 const PlayGameScreen = () => {
   const { startNewGame, joinExistingGame, spectateGame, gameId, gameData } =
     useGame();
 
-  // State for custom alert
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertConfig, setAlertConfig] = useState({
+  // state for custom alert modal with no input field
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
     title: "",
     message: "",
     buttons: [{ text: "OK", onPress: () => {} }],
   });
 
-  // State for text input in custom prompts
-  const [promptInputValue, setPromptInputValue] = useState("");
-  const [isPromptVisible, setIsPromptVisible] = useState(false);
-  const [promptConfig, setPromptConfig] = useState({
+  // state for custom alert modal with input field
+  const [inputValue, setInputValue] = useState("");
+  const [isModalWithInputVisible, setIsModalWithInputVisible] = useState(false);
+  const [modalWithInputConfig, setModalWithInputConfig] = useState({
     title: "",
     message: "",
     onSubmit: (value: string) => {},
   });
 
-  const showAlert = (
+  const showModal = (
     title: string,
     message: string,
     buttons = [{ text: "OK", onPress: () => {} }]
   ) => {
-    setAlertConfig({ title, message, buttons });
-    setAlertVisible(true);
+    setModalConfig({ title, message, buttons });
+    setIsModalVisible(true);
   };
 
-  const showPrompt = (
+  const showModalWithInput = (
     title: string,
     message: string,
     onSubmit: (value: string) => void
   ) => {
-    setPromptConfig({ title, message, onSubmit });
-    setPromptInputValue("");
-    setIsPromptVisible(true);
+    setModalWithInputConfig({ title, message, onSubmit });
+    setInputValue("");
+    setIsModalWithInputVisible(true);
   };
 
   const handleGameCreated = (gameCode: string) => {
-    showAlert(
+    showModal(
       "Game Created",
       `Game Code: ${gameCode}\nShare this with your opponent!`
     );
   };
 
   const handleJoinGame = () => {
-    showPrompt("Join Game", "Enter the game code", async (gameCode: string) => {
+    showModalWithInput("Join Game", "Enter the game code", async (gameCode: string) => {
       if (gameCode) {
         try {
           await joinExistingGame(gameCode);
         } catch (error) {
-          showAlert("Error", "Failed to join game");
+          showModal("Error", "Failed to join game");
         }
       }
     });
   };
 
   const handleSpectateGame = () => {
-    showPrompt(
+    showModalWithInput(
       "Spectate Game",
       "Enter the game code",
       async (gameCode: string) => {
@@ -76,7 +76,7 @@ const PlayGameScreen = () => {
           try {
             await spectateGame(gameCode);
           } catch (error: any) {
-            showAlert("Error", error.message || "Failed to spectate game");
+            showModal("Error", error.message || "Failed to spectate game");
           }
         }
       }
@@ -84,21 +84,21 @@ const PlayGameScreen = () => {
   };
 
   const handlePromptSubmit = () => {
-    setIsPromptVisible(false);
-    promptConfig.onSubmit(promptInputValue);
+    setIsModalWithInputVisible(false);
+    modalWithInputConfig.onSubmit(inputValue);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top"]}>
       <View style={styles.container}>
-        <GameHeader onError={showAlert} />
+        <GameHeader onError={showModal} />
 
         {!gameId ? (
           <GameOptions
             startNewGame={startNewGame}
             joinExistingGame={joinExistingGame}
             spectateGame={spectateGame}
-            onError={showAlert}
+            onError={showModal}
             onGameCreated={handleGameCreated}
             onJoinGame={handleJoinGame}
             onSpectateGame={handleSpectateGame}
@@ -108,40 +108,42 @@ const PlayGameScreen = () => {
             gameCode={gameData.gameCode}
             allowSpectators={gameData.allowSpectators}
           />
-        ) : (
-          <Board />
-        )}
+        ) : gameData?.status === "active" ? (
+          <GameBoard />
+        ) : gameData?.status === "completed" ? (
+          <GameBoard />
+        ) : null}
       </View>
 
       {/* Alert modal */}
       <CustomModal
-        visible={alertVisible}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        buttons={alertConfig.buttons}
-        onDismiss={() => setAlertVisible(false)}
+        visible={isModalVisible}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        buttons={modalConfig.buttons}
+        onDismiss={() => setIsModalVisible(false)}
       />
 
       {/* Custom Prompt modal with input field */}
       <CustomModal
-        visible={isPromptVisible}
-        title={promptConfig.title}
-        message={promptConfig.message}
+        visible={isModalWithInputVisible}
+        title={modalWithInputConfig.title}
+        message={modalWithInputConfig.message}
         buttons={[
           {
             text: "Cancel",
-            onPress: () => setIsPromptVisible(false),
-            style: { backgroundColor: "#999" },
+            onPress: () => setIsModalWithInputVisible(false),
+            variant: "secondary",
           },
           {
             text: "OK",
             onPress: handlePromptSubmit,
           },
         ]}
-        onDismiss={() => setIsPromptVisible(false)}
+        onDismiss={() => setIsModalWithInputVisible(false)}
         showInput={true}
-        inputValue={promptInputValue}
-        onChangeText={setPromptInputValue}
+        inputValue={inputValue}
+        onChangeText={setInputValue}
       />
     </SafeAreaView>
   );
